@@ -25,6 +25,7 @@ enum errorCode
 	RESULT_QUE_FULL 		= 4,
 	RESULT_MUTEX_ERR 		= 5,
 	RESULT_FILE_ERR         = 6,
+	RESULT_OPER_SYS_ERR     = 7,
 };
 
 

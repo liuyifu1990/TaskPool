@@ -10,7 +10,13 @@
 void * GET_MEM(INT32 size);
 void   RET_MEM(void *pData);
 
-void WriteLogAPP00( const INT8 *szFMT, ... );
+
+void  GetIniKeyString(INT8 *szTitle, INT8 *szKey, INT8 *szBuf, INT32 BufLen, INT8 *szFilePath );
+INT32 GetIniKeyInt(INT8 *szTitle, INT8 *szKey, INT8 *szFilePath);
+INT32 InitCfgPath();
+void  TrimLeft(INT8 *s);
+void  Trim(INT8 *s);
+void  TrimRight(INT8 *s);
 
 
 #endif

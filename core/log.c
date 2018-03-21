@@ -176,7 +176,7 @@ void logWrite(INT8 iLogTag, INT8 *pLogBuf, INT32 iBufLen)
 {
 	LogELem_T *pElem = NULL;
 
-	if ( pLogBuf == NULL || iBufLen <= 0 || iLogTag >= MAX_LOG_TAG_NUM
+	if ( pLogBuf == NULL || iBufLen <= 0 || iLogTag >= MAX_LOG_TAG_NUM
 		|| g_LogManager[iLogTag].szCurPath[0] == '\0' )
 	{
 		printf("para in error, log fullpath[%s]", g_LogManager[iLogTag].szCurPath );
@@ -210,3 +210,21 @@ void logWrite(INT8 iLogTag, INT8 *pLogBuf, INT32 iBufLen)
 
 	pthread_cond_signal(&log_cond);
 }
+
+void WriteLogAPP00( const INT8 *szFMT, ... )
+{
+	INT8 szLogbuf[MAX_LOG_STR_LINE_LEN + 1] = {0};
+	/*
+	*TODO:添加日志产生的文件，函数信息，以及时间戳、日志分级宏定义
+	*/
+	va_list args; 
+	va_start(args, szFMT);
+	snprintf(szLogbuf, MAX_LOG_STR_LINE_LEN, szFMT, args); 
+	va_end(args); 
+
+	if ( szLogbuf[0] == '\0' )
+		return;
+
+	logWrite(LOG_TAG_APP00, szLogbuf, strlen(szLogbuf) );
+}
+

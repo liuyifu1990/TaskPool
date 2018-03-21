@@ -8,6 +8,7 @@
 #include <semaphore.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <fcntl.h>
 
 
 #include "queue.h"
@@ -17,10 +18,12 @@
 
 
 
+
 #pragma pack(1)
 
 #define TRUE  1
 #define FALSE 0
+#define CONF_FILE_PATH  "Config.ini"  
 
 
 #endif
