@@ -19,8 +19,10 @@ static void ReadSysCfg()
 	printf("szVar1-%s\n", szVar1);
 	printf("iVar2-%d\n", iVar2);
 	printf("%s\n", g_szCfgFilePath);
+
+	//Log_D(szFMT, ...)
 	
-	WriteLogAPP00( "file-%s, szVar1-%s, iVar2-%d, iVar4-%d, szVar3-%s"
+	Log_D( "file-%s, szVar1-%s, iVar2-%d, iVar4-%d, szVar3-%s"
 					, g_szCfgFilePath
 					, szVar1
 					, iVar2
@@ -52,7 +54,7 @@ int main()
 	
 	InitCfgPath();
 	logInit();
-	logRegister("test.log",    3, LOG_TAG_APP00);
+	logRegister("test.log", 3, LOG_TAG_APP00);
 
 	ReadSysCfg();
 	

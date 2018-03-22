@@ -6,6 +6,8 @@ static pthread_cond_t  log_cond;
 CirQueue_T LogQueue = {0};
 CirQueue_T *pLogQueue = NULL;
 
+INT32 g_logLevel = LOG_LVL_DEBUG;
+
 static void LogAppendFile(LogELem_T *pElem)
 {
 	LogManager_T *pManager = NULL;
@@ -211,20 +213,29 @@ void logWrite(INT8 iLogTag, INT8 *pLogBuf, INT32 iBufLen)
 	pthread_cond_signal(&log_cond);
 }
 
-void WriteLogAPP00( const INT8 *szFMT, ... )
+void WriteLogAPP00(INT32 level, INT8 *filename, INT8 *line, const INT8 *szFMT, ... )
 {
 	INT8 szLogbuf[MAX_LOG_STR_LINE_LEN + 1] = {0};
-	/*
-	*TODO:添加日志产生的文件，函数信息，以及时间戳、日志分级宏定义
-	*/
+	INT8 szInbuf[MAX_LOG_STR_LINE_LEN + 1] = {0};
+	INT8 szTimeStr[MAX_TIME_STR_LEN + 1] = {0};
+
+	if ( g_logLevel < level )
+	{
+		return;
+	}
+
+	getCurTimeStr( szTimeStr, MAX_TIME_STR_LEN );
+	
 	va_list args; 
 	va_start(args, szFMT);
-	snprintf(szLogbuf, MAX_LOG_STR_LINE_LEN, szFMT, args); 
+	vsnprintf(szLogbuf, MAX_LOG_STR_LINE_LEN, szFMT, args); 
 	va_end(args); 
 
 	if ( szLogbuf[0] == '\0' )
 		return;
 
-	logWrite(LOG_TAG_APP00, szLogbuf, strlen(szLogbuf) );
+	snprintf(szInbuf, MAX_LOG_STR_LINE_LEN, "%s %s:%s %s", szTimeStr, filename, line, szLogbuf );
+	
+	logWrite(LOG_TAG_APP00, szInbuf, strlen(szInbuf) );
 }
 

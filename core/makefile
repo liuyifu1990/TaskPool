@@ -1,6 +1,6 @@
 .PHONY: Clean
-SRC = _main.c queue.c utils.c log.c
-OBJS = _main.o queue.o utils.o log.o
+SRC = _main.c queue.c utils.c log.c timer.c
+OBJS = _main.o queue.o utils.o log.o timer.o
 CC = gcc
 CoreTest: $(OBJS)
 	$(CC) -o CoreTest $(OBJS) -lpthread
@@ -16,5 +16,9 @@ utils.o: utils.c
 
 log.o: log.c
 	$(CC) -c -g log.c
+
+timer.o: timer.c
+	$(CC) -c -g timer.c
+
 Clean:
 	rm -f *.o CoreTest

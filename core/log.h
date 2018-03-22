@@ -15,7 +15,8 @@
 INT32 logInit();
 INT32 logRegister(INT8 *szFileName, INT32 iSplitNum, INT8 iLogTag );
 void  logWrite(INT8 iLogTag, INT8 *pLogBuf, INT32 iBufLen);
-void  WriteLogAPP00( const INT8 *szFMT, ... );
+void WriteLogAPP00(INT32 level, INT8 *filename, INT8 *line, const INT8 *szFMT, ... );
+
 
 typedef struct
 {
@@ -54,6 +55,11 @@ typedef struct
 #define LOG_LVL_INFO   2
 #define LOG_LVL_DEBUG  3
 
+
+#define Log_D(szFMT, ...)  WriteLogAPP00(LOG_LVL_DEBUG,  __FILE__, __LINE__, szFMT, __VA_ARGS__)
+#define Log_I(szFMT, ...)  WriteLogAPP00(LOG_LVL_INFO,   __FILE__, __LINE__, szFMT, __VA_ARGS__)
+#define Log_N(szFMT, ...)  WriteLogAPP00(LOG_LVL_NOTICE, __FILE__, __LINE__, szFMT, __VA_ARGS__)
+#define Log_E(szFMT, ...)  WriteLogAPP00(LOG_LVL_ERROR,  __FILE__, __LINE__, szFMT, __VA_ARGS__)
 
 
 
