@@ -15,7 +15,7 @@
 INT32 logInit();
 INT32 logRegister(INT8 *szFileName, INT32 iSplitNum, INT8 iLogTag );
 void  logWrite(INT8 iLogTag, INT8 *pLogBuf, INT32 iBufLen);
-void WriteLogAPP00(INT32 level, INT8 *filename, INT8 *line, const INT8 *szFMT, ... );
+void WriteLogAPP00(INT32 level, INT8 *filename, INT32 line, const INT8 *szFMT, ... );
 
 
 typedef struct

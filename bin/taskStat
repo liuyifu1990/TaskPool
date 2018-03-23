@@ -1,0 +1,9 @@
+#!/bin/sh
+ps -fe|grep taskPool|grep -v grep >/dev/null
+if [ $? -ne 0 ]
+then
+echo "task not running..."
+else
+ps -fe|grep taskPool|grep -v grep
+fi 
+

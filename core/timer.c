@@ -9,8 +9,9 @@ void getCurTimeStr(INT8 *szTime, INT32 len )
 	struct tm * timeinfo;
 	time ( &rawtime );
 	timeinfo = localtime ( &rawtime );
-	snprintf(szTime, len, "%s", asctime (timeinfo));
-
+	snprintf(szTime, len, "%s", asctime(timeinfo));
+	szTime[strlen(szTime)-1] = '\0';
+	
 	return;
 }
 

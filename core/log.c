@@ -213,7 +213,7 @@ void logWrite(INT8 iLogTag, INT8 *pLogBuf, INT32 iBufLen)
 	pthread_cond_signal(&log_cond);
 }
 
-void WriteLogAPP00(INT32 level, INT8 *filename, INT8 *line, const INT8 *szFMT, ... )
+void WriteLogAPP00(INT32 level, INT8 *filename, INT32 line, const INT8 *szFMT, ... )
 {
 	INT8 szLogbuf[MAX_LOG_STR_LINE_LEN + 1] = {0};
 	INT8 szInbuf[MAX_LOG_STR_LINE_LEN + 1] = {0};
@@ -234,7 +234,7 @@ void WriteLogAPP00(INT32 level, INT8 *filename, INT8 *line, const INT8 *szFMT, .
 	if ( szLogbuf[0] == '\0' )
 		return;
 
-	snprintf(szInbuf, MAX_LOG_STR_LINE_LEN, "%s %s:%s %s", szTimeStr, filename, line, szLogbuf );
+	snprintf(szInbuf, MAX_LOG_STR_LINE_LEN, "%s %s:%d [%s]", szTimeStr, filename, line, szLogbuf );
 	
 	logWrite(LOG_TAG_APP00, szInbuf, strlen(szInbuf) );
 }

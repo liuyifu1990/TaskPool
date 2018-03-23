@@ -1,0 +1,10 @@
+#!/bin/sh
+ps -fe|grep taskPool|grep -v grep > /dev/null
+if [ $? -ne 0 ] 
+then
+echo "start process....."
+./taskPool
+else
+echo "task is running..."
+fi 
+

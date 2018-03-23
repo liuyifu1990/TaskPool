@@ -21,7 +21,7 @@ static void ReadSysCfg()
 	printf("%s\n", g_szCfgFilePath);
 
 	//Log_D(szFMT, ...)
-	
+
 	Log_D( "file-%s, szVar1-%s, iVar2-%d, iVar4-%d, szVar3-%s"
 					, g_szCfgFilePath
 					, szVar1

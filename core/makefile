@@ -2,7 +2,7 @@
 SRC = _main.c queue.c utils.c log.c timer.c
 OBJS = _main.o queue.o utils.o log.o timer.o
 CC = gcc
-CoreTest: $(OBJS)
+taskPool: $(OBJS)
 	$(CC) -o CoreTest $(OBJS) -lpthread
 
 _main.o: _main.c
