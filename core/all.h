@@ -16,7 +16,7 @@
 #include "core.h"
 #include "log.h"
 #include "timer.h"
-
+#include "task.h"
 
 
 #pragma pack(1)
@@ -25,5 +25,7 @@
 #define FALSE 0
 #define CONF_FILE_PATH  "Config.ini"  
 
+#define THREAD_ENTRY
+#define MAX_TASK_NUM 	50
 
 #endif

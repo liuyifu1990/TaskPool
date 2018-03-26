@@ -1,8 +1,6 @@
 #ifndef _LOG_H_
 #define _LOG_H_
 
-#include "all.h"
-
 #pragma pack(1)
 
 #define MAX_FILE_PATH_LEN     1024
@@ -56,10 +54,10 @@ typedef struct
 #define LOG_LVL_DEBUG  3
 
 
-#define Log_D(szFMT, ...)  WriteLogAPP00(LOG_LVL_DEBUG,  __FILE__, __LINE__, szFMT, __VA_ARGS__)
-#define Log_I(szFMT, ...)  WriteLogAPP00(LOG_LVL_INFO,   __FILE__, __LINE__, szFMT, __VA_ARGS__)
-#define Log_N(szFMT, ...)  WriteLogAPP00(LOG_LVL_NOTICE, __FILE__, __LINE__, szFMT, __VA_ARGS__)
-#define Log_E(szFMT, ...)  WriteLogAPP00(LOG_LVL_ERROR,  __FILE__, __LINE__, szFMT, __VA_ARGS__)
+#define sysLog_D(szFMT, ...)  WriteLogAPP00(LOG_LVL_DEBUG,  __FILE__, __LINE__, szFMT, ##__VA_ARGS__)
+#define sysLog_I(szFMT, ...)  WriteLogAPP00(LOG_LVL_INFO,   __FILE__, __LINE__, szFMT, ##__VA_ARGS__)
+#define sysLog_N(szFMT, ...)  WriteLogAPP00(LOG_LVL_NOTICE, __FILE__, __LINE__, szFMT, ##__VA_ARGS__)
+#define sysLog_E(szFMT, ...)  WriteLogAPP00(LOG_LVL_ERROR,  __FILE__, __LINE__, szFMT, ##__VA_ARGS__)
 
 
 

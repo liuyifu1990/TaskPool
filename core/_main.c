@@ -1,14 +1,23 @@
 #include "all.h"
 
-extern CirQueue_T LogQueue;
 extern INT8 g_szCfgFilePath[MAX_FILE_PATH_LEN];
+extern TaskItem_T TaskItems[MAX_TASK_NUM];
+
+
 INT8 szVar1[128] = {0};
 INT32 iVar2 = 0;
 
 INT8 szVar3[128] = {0};
 INT32 iVar4 = 0;
 
-static void ReadSysCfg()
+/*TaskItems[] = {
+		{1, NULL, 10, 3000 },
+};
+*/
+
+
+
+static void ReadSysCfg()//可以放在同一的系统参数初始化函数里面
 {
 	GetIniKeyString("TEST1", "var1", szVar1, sizeof(szVar1), g_szCfgFilePath );
 	iVar2 = GetIniKeyInt("TEST1", "var2", g_szCfgFilePath);
@@ -22,7 +31,7 @@ static void ReadSysCfg()
 
 	//Log_D(szFMT, ...)
 
-	Log_D( "file-%s, szVar1-%s, iVar2-%d, iVar4-%d, szVar3-%s"
+	sysLog_D( "file-%s, szVar1-%s, iVar2-%d, iVar4-%d, szVar3-%s"
 					, g_szCfgFilePath
 					, szVar1
 					, iVar2
@@ -54,15 +63,14 @@ int main()
 	
 	InitCfgPath();
 	logInit();
-	logRegister("test.log", 3, LOG_TAG_APP00);
+	logRegister("syslog.log", 3, LOG_TAG_APP00);
 
 	ReadSysCfg();
 	
 	while( i==0 )
 	{
 		i ++;
-		sleep(10);
-		GetIniKeyString("TEST1", "var1", szVar1, sizeof(szVar1), g_szCfgFilePath );
+		sleep(100000000);
 		i --;
 	}
 }

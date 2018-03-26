@@ -68,7 +68,7 @@ static void LogAppendFile(LogELem_T *pElem)
 	}
 }
 
-static void *LogThread( void *arg )
+THREAD_ENTRY static void *LogThread( void *arg )
 {
 	LogELem_T *pElem = NULL;
 	
@@ -95,6 +95,10 @@ INT32 logInit( )
 {
 	INT32 idx = 0;
 	pthread_t threadId = 0;
+	pthread_attr_t attr = {0};
+
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED );
 
 	if ( pthread_mutex_init(&log_mutex, NULL) != 0 )
 	{
@@ -113,7 +117,7 @@ INT32 logInit( )
 	
 	pLogQueue = &LogQueue;
 
-	if (pthread_create(&threadId, NULL, LogThread, NULL) != 0 )
+	if (pthread_create(&threadId, &attr, LogThread, NULL) != 0 )
 	{
 		printf("create log thread err.\n");
 		exit(1);
