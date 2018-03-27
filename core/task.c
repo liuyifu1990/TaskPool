@@ -3,23 +3,31 @@
 static TaskDesc_T g_taskManager[MAX_TASK_NUM];
 static INT32 g_iTaskNum = 0;
 INT32  g_iTaskQueSize = 0;
-TaskItem_T TaskItems[MAX_TASK_NUM];
+
 
 static INT32 taskCreateByCfgsArr();
 static INT32 taskCreatByCfgItem(TaskDesc_T *pDesc);
 THREAD_ENTRY static void *TaskThread( void *arg );
 
 
-INT32 taskInit()
+INT32 taskInit(const TaskItem_T *szTaskItems)
 {
 	INT32 idx = 0;
-	TaskItem_T *pItem = NULL;
+	const TaskItem_T *pItem = NULL;
 	TaskDesc_T *pDesc = NULL;
 	INT32 rc = 0;
+
+	if ( szTaskItems == NULL )
+	{
+		sysLog_E("taskInit: szTaskItems is NULL");
+		return RESULT_PARA_ERR;
+
+	}
 	
 	for (idx = 0; idx < MAX_TASK_NUM; idx ++ )
 	{
-		pItem = &TaskItems[idx];
+		pItem = szTaskItems + idx;
+		
 		pDesc = &g_taskManager[idx];
 		
 		if (   pItem->iTno >= 0 
@@ -64,6 +72,8 @@ INT32 taskInit()
 static INT32 taskCreateByCfgItem(TaskDesc_T *pDesc)
 {
 	INT32 rc = 0;
+	pthread_attr_t attr = {0};
+	pthread_t      id = {0};
 	
 	if ( pDesc == NULL )
 	{
@@ -89,7 +99,15 @@ static INT32 taskCreateByCfgItem(TaskDesc_T *pDesc)
 	}
 
 	//创建任务线程，参数为tno
+	pthread_attr_init(&attr);
+	pthread_attr_setstacksize( &attr, pDesc->taskItem.iStacksize * 1024);
 
+	if ( pthread_create( &id, &attr, TaskThread, (void*)&pDesc->taskItem.iTno ) != 0 )
+	{
+		sysLog_E("taskCreateByCfgItem: create task[%d] error", pDesc->taskItem.iTno );
+		return RESULT_OPER_SYS_ERR;
+	}
+	
 	return RESULT_OK;
 }
 
