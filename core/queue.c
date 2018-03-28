@@ -61,7 +61,7 @@ INT32 queueInsert(CirQueue_T *pQueue, void *pItem)
 	return RESULT_OK;
 }
 
-void *queueGet(CirQueue_T *pQueue)
+void *queueGet(CirQueue_T *pQueue, INT32 oper)
 {
 	void *pRet = NULL;
 	
@@ -75,15 +75,20 @@ void *queueGet(CirQueue_T *pQueue)
 	}
 	
 	pRet = pQueue->data[pQueue->head];
-	pQueue->data[pQueue->head] = NULL;
 	
-	pQueue->head = (pQueue->head + 1) % pQueue->total;
-	pQueue->count --;
+	if ( oper == QUEUE_DEL_YES )
+	{
+		pQueue->data[pQueue->head] = NULL;
+		
+		pQueue->head = (pQueue->head + 1) % pQueue->total;
+		pQueue->count --;
+	}
 	
 	pthread_mutex_unlock(&pQueue->mutex);
 	
 	return pRet;
 }
+
 
 void queueDestory(CirQueue_T *pQueue)
 {

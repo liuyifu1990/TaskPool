@@ -3,6 +3,13 @@
 
 #pragma pack(1)
 
+#define TASK_STATUS_RUNNING 1
+#define TASK_STATUS_WAITING 0
+
+#define INIT_TASK_EVENT   1000
+#define QUIT_TASK_EVENT   1001
+
+
 typedef struct
 {
 	INT32 iNodeNo;
@@ -17,7 +24,7 @@ typedef struct
 	TID_T Sender;
 }MessageItem_T;
 
-typedef void (*TASK_ENTRY_FUNC)(MessageItem_T *pMsg);
+typedef void (*TASK_ENTRY_FUNC)(INT16 iEvent, INT8 *pMsg, INT32 iMsgLen);
 
 typedef struct
 {
@@ -35,9 +42,13 @@ typedef struct
 	pthread_mutex_t task_mutex;
 	pthread_cond_t  task_cond;
 	CirQueue_T 		task_queue;
+
+	UINT8 status;
 }TaskDesc_T;
 
 INT32 taskInit(const TaskItem_T *szTaskItems);
-INT32 ASend( INT8 *pMsg, INT32 iLen, TID_T *pReceiver, TID_T *pSender );
-
+INT32 ASend(INT16    iEvent, INT8 *pMsg, INT32 iLen, TID_T *pReceiver);
+void  getSelfTid();
+INT16 CurEvent();
+void  CurSender(TID_T *pTID );
 #endif

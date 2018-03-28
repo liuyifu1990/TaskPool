@@ -8,6 +8,8 @@
 #define QUEUE_STATUS_NEAR_FULL 1
 #define QUEUE_FULL_PERCENT     90
 
+#define QUEUE_DEL_YES    1
+#define QUEUE_DEL_NO     0
 
 typedef struct
 {
@@ -22,8 +24,9 @@ typedef struct
 
 INT32       queueCreat(CirQueue_T *pQueue, INT32 iQueSize);
 INT32       queueInsert(CirQueue_T *pQueue, void *pItem);
-void*		queueGet(CirQueue_T *pQueue);
+void*		queueGet(CirQueue_T *pQueue, INT32 oper);
 void  		queueDestory(CirQueue_T *pQueue);
 INT32 		queueCnt(CirQueue_T *pQueue );
+void*		queueHead(CirQueue_T *pQueue);//获取队首元素指针，不删除
 
 #endif

@@ -78,11 +78,10 @@ THREAD_ENTRY static void *LogThread( void *arg )
 		pthread_mutex_lock( &log_mutex );
 		while( pLogQueue->count <= 0 )
 		{
-			INT32 ret = 0;
-			ret = pthread_cond_wait( &log_cond, &log_mutex );
+			pthread_cond_wait( &log_cond, &log_mutex );
 		}
 
-		pElem = queueGet(pLogQueue);//取数据，写文件
+		pElem = queueGet(pLogQueue, QUEUE_DEL_YES );//取数据，写文件
 
 		LogAppendFile( pElem);
 
