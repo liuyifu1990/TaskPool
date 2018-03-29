@@ -32,7 +32,7 @@ typedef struct
 	UINT8 *pNameStr;		//线程的名字
 	TASK_ENTRY_FUNC entry;	//task处理函数
 	INT32 iStacksize;		//线程栈空间大小，单位kb
-	INT32 iMaxtime;			//最大单事件处理最大运行时间，单位s
+	INT32 iMaxtime;			//最大单事件处理最大运行时间，单位100ms
 }TaskItem_T;
 
 typedef struct

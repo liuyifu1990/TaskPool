@@ -123,6 +123,7 @@ INT32 logInit( )
 	}
 	else
 	{
+		pthread_attr_destroy(&attr);
 		printf("log init ok!\n");
 	}
 }
@@ -237,7 +238,7 @@ void WriteLogAPP00(INT32 level, INT8 *filename, INT32 line, const INT8 *szFMT, .
 	if ( szLogbuf[0] == '\0' )
 		return;
 
-	snprintf(szInbuf, MAX_LOG_STR_LINE_LEN, "%s %s:%d [%s]", szTimeStr, filename, line, szLogbuf );
+	snprintf(szInbuf, MAX_LOG_STR_LINE_LEN, "%s %s:%d %s", szTimeStr, filename, line, szLogbuf );
 	
 	logWrite(LOG_TAG_APP00, szInbuf, strlen(szInbuf) );
 }

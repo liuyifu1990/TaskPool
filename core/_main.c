@@ -2,8 +2,32 @@
 
 extern INT8 g_szCfgFilePath[MAX_FILE_PATH_LEN];
 
+void testTask1( INT16 event, INT8 *pMsg, INT32 iLen )
+{
+	switch(event)
+	{
+		case INIT_TASK_EVENT:
+		{
+			sysLog_D("testTask1: recv INIT_TASK_EVENT" );
+			break;
+		}
+		case QUIT_TASK_EVENT:
+		{
+			sysLog_D("testTask1: recv QUIT_TASK_EVENT" );
+			break;
+		}
+		default:
+		{
+			sysLog_D("testTask1: recv known event-%d", event );
+			break;
+		}
+	}
+
+	return;
+}
+
 TaskItem_T TaskItems[MAX_TASK_NUM] = {
-		{1, "testTask", NULL, 1024, 10},
+		{1, "testTask1", testTask1, 1024, 10},
 };
 
 
@@ -30,6 +54,12 @@ int main()
 	InitCfgPath();
 	logInit();
 	logRegister("syslog.log", 3, LOG_TAG_APP00);
+
+	if ( RESULT_OK != taskInit(TaskItems) )
+	{
+		sysLog_D("taskInit fail." );
+		exit(1);
+	}
 	
 	while( i==0 )
 	{

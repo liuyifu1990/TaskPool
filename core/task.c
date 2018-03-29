@@ -2,7 +2,7 @@
 
 static TaskDesc_T g_taskManager[MAX_TASK_NUM];
 static INT32 g_iTaskNum = 0;
-INT32  g_iTaskQueSize = 0;
+INT32  g_iTaskQueSize = 1000;
 INT32  g_CurNodeNo;
 
 static pthread_key_t  p_key;
@@ -31,14 +31,12 @@ INT32 taskInit(const TaskItem_T *szTaskItems)
 	
 	for (idx = 0; idx < MAX_TASK_NUM; idx ++ )
 	{
-		pItem = szTaskItems + idx;
-		
-		pDesc = &g_taskManager[idx];
+		pItem = &szTaskItems[idx];
 		
 		if (   pItem->iTno >= 0 
 			&& pItem->entry != NULL 
-			&& pItem->iStacksize <=0 
-			&& pItem->iMaxtime <= 0 
+			&& pItem->iStacksize > 0 
+			&& pItem->iMaxtime > 0 
 			&& pItem->iTno < MAX_TASK_NUM )
 		{
 			if (g_taskManager[pItem->iTno].taskItem.entry != NULL )//已经存在一个了
@@ -48,6 +46,7 @@ INT32 taskInit(const TaskItem_T *szTaskItems)
 			}
 			
 			memcpy( &g_taskManager[pItem->iTno].taskItem, pItem, sizeof(TaskItem_T) );
+
 			g_iTaskNum ++;
 		}
 		else if (pItem->iTno == 0 && pItem->entry == NULL
@@ -79,7 +78,7 @@ static INT32 taskCreateByCfgItem(TaskDesc_T *pDesc)
 	INT32 rc = 0;
 	pthread_attr_t attr = {0};
 	pthread_t      id = {0};
-	
+
 	if ( pDesc == NULL )
 	{
 		return RESULT_PARA_ERR;
@@ -113,6 +112,7 @@ static INT32 taskCreateByCfgItem(TaskDesc_T *pDesc)
 		return RESULT_OPER_SYS_ERR;
 	}
 	
+	pthread_attr_destroy(&attr);
 	return RESULT_OK;
 }
 
@@ -161,12 +161,16 @@ static void taskInitEvent()
 	INT16 iTno = *(INT16*)pthread_getspecific(p_key);
 	
 	pDesc = &g_taskManager[iTno];
-
+	
+	pthread_mutex_lock(&pDesc->task_mutex);
+	
 	if ( pDesc->taskItem.entry != NULL )
 	{
 		sysLog_E("taskInitEvent: send init event to task[%d]", iTno );
 		pDesc->taskItem.entry(INIT_TASK_EVENT, NULL, 0);
 	}
+	
+	pthread_mutex_unlock(&pDesc->task_mutex);
 }
 
 static void taskQuitEvent( )
@@ -175,13 +179,14 @@ static void taskQuitEvent( )
 	INT16 iTno = *(INT16*)pthread_getspecific(p_key);
 	
 	pDesc = &g_taskManager[iTno];
-
+	pthread_mutex_lock(&pDesc->task_mutex);
+	
 	if ( pDesc->taskItem.entry != NULL )
 	{
 		sysLog_E("taskQuitEvent: send quit event to task[%d]", iTno );
 		pDesc->taskItem.entry(QUIT_TASK_EVENT, NULL, 0);
 	}
-
+	pthread_mutex_unlock(&pDesc->task_mutex);
 }
 
 THREAD_ENTRY static void *TaskThread( void *arg )
@@ -190,9 +195,12 @@ THREAD_ENTRY static void *TaskThread( void *arg )
 	TaskDesc_T *pDesc = NULL;
 	MessageItem_T *pMsgItem = NULL;
 	
-	pthread_setspecific(p_key, arg);
+	
 
 	iCurTno = *(INT16*)arg;
+	
+	pthread_key_create(&p_key,NULL); 
+	pthread_setspecific(p_key, arg);
 	
 	sysLog_E("TaskThread: init task %d...", iCurTno );
 	pDesc = &g_taskManager[iCurTno];
