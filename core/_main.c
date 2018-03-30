@@ -4,11 +4,24 @@ extern INT8 g_szCfgFilePath[MAX_FILE_PATH_LEN];
 
 void testTask1( INT16 event, INT8 *pMsg, INT32 iLen )
 {
+	TID_T SelfTID = {0};
+	TID_T SenderTID = {0};
+	
+	getSelfTid(&SelfTID);
+	CurSender(&SenderTID);	
+		
 	switch(event)
 	{
 		case INIT_TASK_EVENT:
 		{
-			sysLog_D("testTask1: recv INIT_TASK_EVENT" );
+			sysLog_D("testTask1: %d recv INIT_TASK_EVENT, pMsg=%s, msgLen=%d, sender=%d", SelfTID.iTno, pMsg, iLen, SenderTID.iTno );
+
+			TID_T rec = {0};
+			INT32 ret = 0;
+			
+			rec.iTno = 1;
+			sleep(1);
+			ret = ASend(INIT_TASK_EVENT, "testMsg", 7, &rec);
 			break;
 		}
 		case QUIT_TASK_EVENT:
@@ -28,6 +41,7 @@ void testTask1( INT16 event, INT8 *pMsg, INT32 iLen )
 
 TaskItem_T TaskItems[MAX_TASK_NUM] = {
 		{1, "testTask1", testTask1, 1024, 10},
+		{2, "testTask2", testTask1, 1024, 10},
 };
 
 

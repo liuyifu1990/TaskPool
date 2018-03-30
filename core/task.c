@@ -105,7 +105,9 @@ static INT32 taskCreateByCfgItem(TaskDesc_T *pDesc)
 	//创建任务线程，参数为tno
 	pthread_attr_init(&attr);
 	pthread_attr_setstacksize( &attr, pDesc->taskItem.iStacksize * 1024);
+	pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
 
+	
 	if ( pthread_create( &id, &attr, TaskThread, (void*)&pDesc->taskItem.iTno ) != 0 )
 	{
 		sysLog_E("taskCreateByCfgItem: create task[%d] error", pDesc->taskItem.iTno );
@@ -151,32 +153,34 @@ void getSelfTid(TID_T *pTID)
 	if ( pTID == NULL )
 		return;
 	
-	pTID->iTno =  *(INT16*)pthread_getspecific(p_key);
+	pTID->iTno =  (INT16)pthread_getspecific(p_key);
 	pTID->iNodeNo = g_CurNodeNo;
+
+	sysLog_D("getSelfTid: key=%d, iTno=%d", p_key, pTID->iTno );
 }
 
-static void taskInitEvent()
+static void sendInitEvent(INT16 iTno)
 {
 	TaskDesc_T *pDesc = NULL;
-	INT16 iTno = *(INT16*)pthread_getspecific(p_key);
-	
+
 	pDesc = &g_taskManager[iTno];
-	
-	pthread_mutex_lock(&pDesc->task_mutex);
-	
+
 	if ( pDesc->taskItem.entry != NULL )
 	{
 		sysLog_E("taskInitEvent: send init event to task[%d]", iTno );
 		pDesc->taskItem.entry(INIT_TASK_EVENT, NULL, 0);
 	}
-	
-	pthread_mutex_unlock(&pDesc->task_mutex);
+}
+
+static void taskInitOnce()
+{
+	pthread_key_create(&p_key, NULL); 
 }
 
 static void taskQuitEvent( )
 {
 	TaskDesc_T *pDesc = NULL;
-	INT16 iTno = *(INT16*)pthread_getspecific(p_key);
+	INT16 iTno = (INT16)pthread_getspecific(p_key);
 	
 	pDesc = &g_taskManager[iTno];
 	pthread_mutex_lock(&pDesc->task_mutex);
@@ -194,48 +198,50 @@ THREAD_ENTRY static void *TaskThread( void *arg )
 	INT32 iCurTno = 0;
 	TaskDesc_T *pDesc = NULL;
 	MessageItem_T *pMsgItem = NULL;
-	
-	
 
 	iCurTno = *(INT16*)arg;
+	pthread_once(&once, taskInitOnce);
 	
-	pthread_key_create(&p_key,NULL); 
-	pthread_setspecific(p_key, arg);
+	pthread_setspecific(p_key, (void*)iCurTno );
 	
 	sysLog_E("TaskThread: init task %d...", iCurTno );
-	pDesc = &g_taskManager[iCurTno];
 
-	pthread_once(&once, taskInitEvent);
+	sendInitEvent(iCurTno);
+	
+	pDesc = &g_taskManager[iCurTno];
 	
 	while(TRUE)
 	{
 		pthread_mutex_lock(&pDesc->task_mutex);
+		
 		while( pDesc->task_queue.count <= 0 )
 		{
 			pDesc->status = TASK_STATUS_WAITING;
 			pthread_cond_wait(&pDesc->task_cond, &pDesc->task_mutex);
 		}
+		pDesc->status = TASK_STATUS_RUNNING;
 
-		pMsgItem = queueGet(&pDesc->task_queue, QUEUE_DEL_NO );
+		pMsgItem = queueGet(&pDesc->task_queue, QUEUE_DEL_YES );
 		if ( pMsgItem == NULL )
 		{
 			sysLog_E("TaskThread: msg in queue in NULL, tno[%d]", iCurTno);
 			exit(1);
 		}
-		pDesc->status = TASK_STATUS_RUNNING;
+		
 		/*
 		* 设置执行时长定时器
 		*/
+		pthread_mutex_unlock(&pDesc->task_mutex);
+
 		if (pDesc->taskItem.entry != NULL)
 		{
 			pDesc->taskItem.entry( pMsgItem->iEvent, pMsgItem->pMsg, pMsgItem->iMsgLen );
 		}
-
-		pMsgItem = queueGet(&pDesc->task_queue, QUEUE_DEL_YES );
+		
 		free( (void*)pMsgItem );
 		pMsgItem = NULL;
 		
-		pthread_mutex_unlock(&pDesc->task_mutex);
+		
 	}
 }
 
@@ -243,7 +249,7 @@ INT16 CurEvent()
 {
 	TaskDesc_T *pDesc = NULL;
 	MessageItem_T *pMsgItem = NULL;
-	INT16 iTno = *(INT16*)pthread_getspecific(p_key);
+	INT16 iTno =  (INT16)pthread_getspecific(p_key);
 
 	pDesc = &g_taskManager[iTno];
 	if ( pDesc->status == TASK_STATUS_RUNNING )
@@ -264,11 +270,13 @@ void CurSender(TID_T *pTID)
 {
 	TaskDesc_T *pDesc = NULL;
 	MessageItem_T *pMsgItem = NULL;
-	INT16 iTno = *(INT16*)pthread_getspecific(p_key);
+	INT16 iTno = (INT16)pthread_getspecific(p_key);
 	if ( pTID == NULL )
 	{
 		return;
 	}
+
+	sysLog_D("CurSender: key=%d, iTno=%d", p_key, iTno );
 	
 	pDesc = &g_taskManager[iTno];
 	if ( pDesc->status == TASK_STATUS_RUNNING )
@@ -286,7 +294,7 @@ void CurSender(TID_T *pTID)
 }
 
 INT32 ASend(INT16 iEvent, INT8 *pMsg, INT32 iLen, TID_T *pReceiver)
-{
+{	//send to local node only
 	TID_T TID = {0};
 	MessageItem_T * pMsgItem = NULL;
 	TaskDesc_T *pDesc = NULL;
@@ -319,15 +327,13 @@ INT32 ASend(INT16 iEvent, INT8 *pMsg, INT32 iLen, TID_T *pReceiver)
 	getSelfTid(&TID);
 
 	pDesc = getTaskDesc(pReceiver->iTno);
-	if (pDesc == NULL )
+	if (pDesc == NULL || pDesc->taskItem.entry == NULL )
 	{
 		return RESULT_PARA_ERR;
 	}
-	
-	pthread_mutex_lock(&pDesc->task_mutex);
 
+	pthread_mutex_lock(&pDesc->task_mutex);
 	ret = queueInsert(&pDesc->task_queue, (void*) pMsgItem );
-	
 	if ( ret != RESULT_OK )
 	{
 		pthread_mutex_unlock(&pDesc->task_mutex);
