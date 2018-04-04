@@ -7,12 +7,14 @@ INT32  g_CurNodeNo;
 
 static pthread_key_t  p_key;
 static pthread_once_t once = PTHREAD_ONCE_INIT; 
-
+static pthread_t g_timeoutId = {0};
 
 static INT32 taskCreateByCfgsArr();
 static INT32 taskCreatByCfgItem(TaskDesc_T *pDesc);
 THREAD_ENTRY static void *TaskThread( void *arg );
 static TaskDesc_T*getTaskDesc(INT32 iTno);
+THREAD_ENTRY static void *TaskInfoDetector( void *arg );
+static void taskRuntimeDetect();
 
 
 INT32 taskInit(const TaskItem_T *szTaskItems)
@@ -21,7 +23,8 @@ INT32 taskInit(const TaskItem_T *szTaskItems)
 	const TaskItem_T *pItem = NULL;
 	TaskDesc_T *pDesc = NULL;
 	INT32 rc = 0;
-
+	pthread_t id = 0;
+	
 	if ( szTaskItems == NULL )
 	{
 		sysLog_E("taskInit: szTaskItems is NULL");
@@ -107,7 +110,6 @@ static INT32 taskCreateByCfgItem(TaskDesc_T *pDesc)
 	pthread_attr_setstacksize( &attr, pDesc->taskItem.iStacksize * 1024);
 	pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
 
-	
 	if ( pthread_create( &id, &attr, TaskThread, (void*)&pDesc->taskItem.iTno ) != 0 )
 	{
 		sysLog_E("taskCreateByCfgItem: create task[%d] error", pDesc->taskItem.iTno );
@@ -153,13 +155,13 @@ void getSelfTid(TID_T *pTID)
 	if ( pTID == NULL )
 		return;
 	
-	pTID->iTno =  (INT16)pthread_getspecific(p_key);
+	pTID->iTno =  (INT32)(long)pthread_getspecific(p_key);
 	pTID->iNodeNo = g_CurNodeNo;
 
-	sysLog_D("getSelfTid: key=%d, iTno=%d", p_key, pTID->iTno );
+	//sysLog_D("getSelfTid: key=%d, iTno=%d", p_key, pTID->iTno );
 }
 
-static void sendInitEvent(INT16 iTno)
+static void sendInitEvent(INT32 iTno)
 {
 	TaskDesc_T *pDesc = NULL;
 
@@ -180,7 +182,7 @@ static void taskInitOnce()
 static void taskQuitEvent( )
 {
 	TaskDesc_T *pDesc = NULL;
-	INT16 iTno = (INT16)pthread_getspecific(p_key);
+	INT32 iTno = (INT32)(long)pthread_getspecific(p_key);
 	
 	pDesc = &g_taskManager[iTno];
 	pthread_mutex_lock(&pDesc->task_mutex);
@@ -199,10 +201,10 @@ THREAD_ENTRY static void *TaskThread( void *arg )
 	TaskDesc_T *pDesc = NULL;
 	MessageItem_T *pMsgItem = NULL;
 
-	iCurTno = *(INT16*)arg;
+	iCurTno = *(INT32*)arg;
 	pthread_once(&once, taskInitOnce);
 	
-	pthread_setspecific(p_key, (void*)iCurTno );
+	pthread_setspecific(p_key, (void*)(long)iCurTno );
 	
 	sysLog_E("TaskThread: init task %d...", iCurTno );
 
@@ -216,31 +218,35 @@ THREAD_ENTRY static void *TaskThread( void *arg )
 		
 		while( pDesc->task_queue.count <= 0 )
 		{
-			pDesc->status = TASK_STATUS_WAITING;
 			pthread_cond_wait(&pDesc->task_cond, &pDesc->task_mutex);
 		}
-		pDesc->status = TASK_STATUS_RUNNING;
 
-		pMsgItem = queueGet(&pDesc->task_queue, QUEUE_DEL_YES );
+		pMsgItem = queueGet(&pDesc->task_queue, QUEUE_DEL_NO );
 		if ( pMsgItem == NULL )
 		{
 			sysLog_E("TaskThread: msg in queue in NULL, tno[%d]", iCurTno);
 			exit(1);
 		}
-		
-		/*
-		* 设置执行时长定时器
-		*/
+
 		pthread_mutex_unlock(&pDesc->task_mutex);
 
+		pDesc->status = TASK_STATUS_RUNNING;
+		time(&pDesc->iTick);
+		
 		if (pDesc->taskItem.entry != NULL)
 		{
 			pDesc->taskItem.entry( pMsgItem->iEvent, pMsgItem->pMsg, pMsgItem->iMsgLen );
 		}
 		
-		free( (void*)pMsgItem );
-		pMsgItem = NULL;
+		pDesc->status = TASK_STATUS_WAITING;
+		pDesc->iTick = 0;
 		
+		pMsgItem = queueGet(&pDesc->task_queue, QUEUE_DEL_YES );
+		if ( pMsgItem != NULL  )
+		{
+			free( (void*)pMsgItem );
+			pMsgItem = NULL;
+		}
 		
 	}
 }
@@ -249,7 +255,7 @@ INT16 CurEvent()
 {
 	TaskDesc_T *pDesc = NULL;
 	MessageItem_T *pMsgItem = NULL;
-	INT16 iTno =  (INT16)pthread_getspecific(p_key);
+	INT32 iTno =  (INT32)(long)pthread_getspecific(p_key);
 
 	pDesc = &g_taskManager[iTno];
 	if ( pDesc->status == TASK_STATUS_RUNNING )
@@ -270,13 +276,13 @@ void CurSender(TID_T *pTID)
 {
 	TaskDesc_T *pDesc = NULL;
 	MessageItem_T *pMsgItem = NULL;
-	INT16 iTno = (INT16)pthread_getspecific(p_key);
+	INT32 iTno = (INT32)(long)pthread_getspecific(p_key);
 	if ( pTID == NULL )
 	{
 		return;
 	}
 
-	sysLog_D("CurSender: key=%d, iTno=%d", p_key, iTno );
+	//sysLog_D("CurSender: key=%d, iTno=%d", p_key, iTno );
 	
 	pDesc = &g_taskManager[iTno];
 	if ( pDesc->status == TASK_STATUS_RUNNING )
@@ -293,14 +299,14 @@ void CurSender(TID_T *pTID)
 	return;
 }
 
-INT32 ASend(INT16 iEvent, INT8 *pMsg, INT32 iLen, TID_T *pReceiver)
+INT32 ASend(UINT32 iEvent, INT8 *pMsg, INT32 iLen, TID_T *pReceiver)
 {	//send to local node only
 	TID_T TID = {0};
 	MessageItem_T * pMsgItem = NULL;
 	TaskDesc_T *pDesc = NULL;
 	INT32 ret = 0;
 	
-	if ( iEvent<0 || pMsg == NULL || iLen <= 0 || pReceiver == NULL )
+	if ( iEvent < 0 || pMsg == NULL || iLen <= 0 || pReceiver == NULL )
 	{
 		return RESULT_PARA_ERR;
 	}
@@ -322,10 +328,10 @@ INT32 ASend(INT16 iEvent, INT8 *pMsg, INT32 iLen, TID_T *pReceiver)
 	
 	pMsgItem->iEvent = iEvent;
 	pMsgItem->iMsgLen = iLen;
-	memcpy(&pMsgItem->Sender, pReceiver, sizeof(TID_T) );
-	
-	getSelfTid(&TID);
 
+	getSelfTid(&TID);
+	memcpy(&pMsgItem->Sender, &TID, sizeof(TID_T) );
+	
 	pDesc = getTaskDesc(pReceiver->iTno);
 	if (pDesc == NULL || pDesc->taskItem.entry == NULL )
 	{
@@ -353,4 +359,84 @@ static TaskDesc_T*getTaskDesc(INT32 iTno)
 	}
 
 	return &g_taskManager[iTno];
+}
+
+static void taskRuntimeDetect()
+{
+	//to be done: queue print & event process time dectect
+	time_t iCurTime = 0;
+	TaskDesc_T *pDesc = NULL;
+	INT32 idx = 0;
+	MessageItem_T *pItem = NULL;
+
+	for (idx = 0; idx < MAX_TASK_NUM; idx ++)
+	{
+		pDesc = getTaskDesc(idx);
+
+		if ( pDesc == NULL || pDesc->taskItem.entry == NULL )
+			continue;
+
+		
+	}
+	
+	
+}
+
+THREAD_ENTRY static void *TaskInfoDetector( void *arg )
+{
+	INT32 idx = 0;
+	TaskDesc_T *pDesc = NULL;
+	time_t iCurTime;
+	INT32 ret, sigNo = 0;
+
+	sigset_t *pSet = (sigset_t *) arg;
+	alarm(1);
+	
+	for (;;)
+	{
+		ret = sigwait(pSet, &sigNo );
+		if ( ret != 0 )
+			sysLog_D("TaskTimeDetector: sigwait err, ret=%d", ret);
+
+		sysLog_D("TaskTimeDetector: handle %d succ.", sigNo);
+	}
+}
+
+static void almSingleHandle()
+{
+	alarm(1);
+	pthread_kill( g_timeoutId, SIGALRM );
+	return;
+}
+
+INT32 initTaskSingleManage()
+{
+	sigset_t set;
+	pthread_attr_t attr = {0};
+	
+	sigemptyset(&set);
+	sigaddset(&set, SIGALRM);
+
+	if ( pthread_sigmask(SIG_SETMASK, &set, NULL) != 0 )
+	{
+		return RESULT_OPER_SYS_ERR;
+	}
+
+	signal(SIGALRM, almSingleHandle);
+	alarm(1);
+	
+	pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
+	if ( pthread_create( &g_timeoutId, &attr, TaskInfoDetector, (void*)&set ) != 0 )
+	{
+		sysLog_D("initTaskSingleManage pthead_create returns error" );
+		return RESULT_OPER_SYS_ERR;
+	}
+	else
+	{
+		sysLog_D("initTaskSingleManage create suc, pthreadId=%d", g_timeoutId );
+	}
+	
+
+	return RESULT_OK;
+
 }

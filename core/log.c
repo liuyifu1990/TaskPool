@@ -28,12 +28,20 @@ static void LogAppendFile(LogELem_T *pElem)
 		{
 			break;
 		}
+
+		if ( 0 != access( pManager->szCurPath, 0) )
+		{	//in case of file loss
+			fclose(pManager->pFile);
+			pManager->pFile =fopen(pManager->szCurPath, "wb+");
+			pManager->iFileSize = 0;
+		}
 		
 		if ( pManager->iFileSize > MAX_FILE_SIZE * 1024 * 1024 )
 		{
 			fclose(pManager->pFile);
 			remove(pManager->szCurPath);
-			
+
+			pManager->iSeq ++;
 			pManager->iSeq = pManager->iSeq % pManager->iSplitNum;
 			snprintf(pManager->szCurPath, MAX_FILE_PATH_LEN, "%s/log/%s%02d%s"
 					, getenv("HOME"), pManager->szFileName
@@ -82,9 +90,7 @@ THREAD_ENTRY static void *LogThread( void *arg )
 		}
 
 		pElem = queueGet(pLogQueue, QUEUE_DEL_YES );//取数据，写文件
-
 		LogAppendFile( pElem);
-
 		pthread_mutex_unlock( &log_mutex );
 		
 	}
@@ -124,7 +130,7 @@ INT32 logInit( )
 	else
 	{
 		pthread_attr_destroy(&attr);
-		printf("log init ok!\n");
+		//printf("log init ok! ptheadId=%d\n", threadId);
 	}
 }
 

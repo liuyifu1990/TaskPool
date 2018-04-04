@@ -10,6 +10,8 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <time.h>
+#include <signal.h>
+
 
 #include "queue.h"
 #include "utils.h"

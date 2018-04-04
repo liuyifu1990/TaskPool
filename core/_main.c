@@ -2,7 +2,7 @@
 
 extern INT8 g_szCfgFilePath[MAX_FILE_PATH_LEN];
 
-void testTask1( INT16 event, INT8 *pMsg, INT32 iLen )
+void testTask1( UINT32 event, INT8 *pMsg, INT32 iLen )
 {
 	TID_T SelfTID = {0};
 	TID_T SenderTID = {0};
@@ -18,9 +18,17 @@ void testTask1( INT16 event, INT8 *pMsg, INT32 iLen )
 
 			TID_T rec = {0};
 			INT32 ret = 0;
+
+			if (SelfTID.iTno == 1)
+			{
+				rec.iTno = 2;
+			}
+			else
+			{
+				rec.iTno = 1;
+			}
 			
-			rec.iTno = 1;
-			sleep(1);
+			usleep(1000*10);
 			ret = ASend(INIT_TASK_EVENT, "testMsg", 7, &rec);
 			break;
 		}
@@ -69,6 +77,11 @@ int main()
 	logInit();
 	logRegister("syslog.log", 3, LOG_TAG_APP00);
 
+	if ( initTaskSingleManage() != RESULT_OK )
+	{
+		exit(1);
+	}
+	
 	if ( RESULT_OK != taskInit(TaskItems) )
 	{
 		sysLog_D("taskInit fail." );

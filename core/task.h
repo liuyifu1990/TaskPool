@@ -18,7 +18,7 @@ typedef struct
 
 typedef struct
 {
-	INT16 iEvent;
+	UINT32 iEvent;
 	INT8  *pMsg;
 	INT32 iMsgLen;
 	TID_T Sender;
@@ -28,7 +28,7 @@ typedef void (*TASK_ENTRY_FUNC)(INT16 iEvent, INT8 *pMsg, INT32 iMsgLen);
 
 typedef struct
 {
-	INT16 iTno;				//task的Tno
+	INT32 iTno;				//task的Tno
 	UINT8 *pNameStr;		//线程的名字
 	TASK_ENTRY_FUNC entry;	//task处理函数
 	INT32 iStacksize;		//线程栈空间大小，单位kb
@@ -44,10 +44,11 @@ typedef struct
 	CirQueue_T 		task_queue;
 
 	UINT8 status;
+	time_t iTick;
 }TaskDesc_T;
 
 INT32 taskInit(const TaskItem_T *szTaskItems);
-INT32 ASend(INT16    iEvent, INT8 *pMsg, INT32 iLen, TID_T *pReceiver);
+INT32 ASend(UINT32    iEvent, INT8 *pMsg, INT32 iLen, TID_T *pReceiver);
 void  getSelfTid();
 INT16 CurEvent();
 void  CurSender(TID_T *pTID );
