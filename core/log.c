@@ -39,14 +39,16 @@ static void LogAppendFile(LogELem_T *pElem)
 		if ( pManager->iFileSize > MAX_FILE_SIZE * 1024 * 1024 )
 		{
 			fclose(pManager->pFile);
-			remove(pManager->szCurPath);
+			//remove(pManager->szCurPath);
 
 			pManager->iSeq ++;
-			pManager->iSeq = pManager->iSeq % pManager->iSplitNum;
 			snprintf(pManager->szCurPath, MAX_FILE_PATH_LEN, "%s/log/%s%02d%s"
 					, getenv("HOME"), pManager->szFileName
-					, pManager->iSeq, pManager->szFileSuffix );
+					, pManager->iSeq % pManager->iSplitNum
+					, pManager->szFileSuffix );
 			
+			remove(pManager->szCurPath);
+					
 			pManager->pFile =fopen(pManager->szCurPath, "wb+");
 			if ( pManager->pFile == NULL )
 			{

@@ -98,7 +98,7 @@ void GetIniKeyString(INT8 *szTitle, INT8 *szKey, INT8 *szBuf, INT32 BufLen, INT8
                     }  
                     else  
                     {  
-                        //找打key对应变量   
+                        //找key对应变量   
                         Trim(tmp+1);
 						snprintf(szBuf, BufLen, "%s", tmp+1 );
                         fclose(fp);  
@@ -129,8 +129,6 @@ INT32 GetIniKeyInt(INT8 *szTitle, INT8 *szKey, INT8 *szFilePath)
 	return atoi(szBuf);
 }  
 
-
-
 INT32 InitCfgPath()
 {
 	INT8 *pHome = NULL;
@@ -144,3 +142,36 @@ INT32 InitCfgPath()
 	snprintf( g_szCfgFilePath, 1024, "%s%s%s", pHome, "/etc/", CONF_FILE_PATH );
 	return RESULT_OK;
 }
+
+void thread_sleep_ms(UINT32 iCnt_ms)
+{
+	struct timeval tempval;
+	tempval.tv_sec = 0;
+	tempval.tv_usec = iCnt_ms * 1000;
+	select(0, NULL, NULL, NULL, &tempval);
+}
+
+void thread_sleep_s(UINT32 iCnt_s)
+{
+	struct timeval tempval;
+	tempval.tv_sec = iCnt_s;
+	tempval.tv_usec = 0;
+	select(0, NULL, NULL, NULL, &tempval);
+
+}
+
+void getCurTimeStr(INT8 *szTime, INT32 len )
+{
+	if ( szTime == NULL )
+		return;
+	
+	time_t rawtime;
+	struct tm * timeinfo;
+	time ( &rawtime );
+	timeinfo = localtime ( &rawtime );
+	snprintf(szTime, len, "%s", asctime(timeinfo));
+	szTime[strlen(szTime)-1] = '\0';
+	
+	return;
+}
+

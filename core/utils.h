@@ -17,6 +17,9 @@ INT32 InitCfgPath();
 void  TrimLeft(INT8 *s);
 void  Trim(INT8 *s);
 void  TrimRight(INT8 *s);
+void  thread_sleep_ms(UINT32 iCnt_ms);
+void  thread_sleep_s(UINT32 iCnt_s);
+void   getCurTimeStr(INT8 *szTime, INT32 len );
 
 
 #endif

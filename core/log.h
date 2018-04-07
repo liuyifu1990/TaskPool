@@ -6,7 +6,7 @@
 #define MAX_FILE_PATH_LEN     1024
 #define MAX_FILE_NAME_LEN     256
 #define MAX_FILE_SUFFIX_LEN   32
-#define MAX_FILE_SIZE         5 //文件大小，MB
+#define MAX_FILE_SIZE         2 //文件大小，MB
 #define MAX_LOG_QUEUE_LEN     1000
 #define MAX_LOG_STR_LINE_LEN  1024
 

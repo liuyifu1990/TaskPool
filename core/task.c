@@ -4,6 +4,9 @@ static TaskDesc_T g_taskManager[MAX_TASK_NUM];
 static INT32 g_iTaskNum = 0;
 INT32  g_iTaskQueSize = 1000;
 INT32  g_CurNodeNo;
+INT32  g_iEventTimeoutSec = 2;
+
+extern INT8  g_szCfgFilePath[MAX_FILE_PATH_LEN];
 
 static pthread_key_t  p_key;
 static pthread_once_t once = PTHREAD_ONCE_INIT; 
@@ -16,6 +19,20 @@ static TaskDesc_T*getTaskDesc(INT32 iTno);
 THREAD_ENTRY static void *TaskInfoDetector( void *arg );
 static void taskRuntimeDetect();
 
+static void taskReadCoreCfg()
+{
+	//TBD
+	g_iEventTimeoutSec = GetIniKeyInt("TASK", "MAX_EVENT_TIMEOUT", g_szCfgFilePath);
+	if ( g_iEventTimeoutSec <=0 || g_iEventTimeoutSec > 10 )
+	{
+		g_iEventTimeoutSec = 2;
+	}
+
+	sysLog_D("taskReadCoreCfg: g_iEventTimeoutSec[%d]", g_iEventTimeoutSec);
+
+	return;
+}
+
 
 INT32 taskInit(const TaskItem_T *szTaskItems)
 {
@@ -25,13 +42,15 @@ INT32 taskInit(const TaskItem_T *szTaskItems)
 	INT32 rc = 0;
 	pthread_t id = 0;
 	
+	taskReadCoreCfg();
+	
 	if ( szTaskItems == NULL )
 	{
 		sysLog_E("taskInit: szTaskItems is NULL");
 		return RESULT_PARA_ERR;
 
 	}
-	
+
 	for (idx = 0; idx < MAX_TASK_NUM; idx ++ )
 	{
 		pItem = &szTaskItems[idx];
@@ -237,7 +256,8 @@ THREAD_ENTRY static void *TaskThread( void *arg )
 		{
 			pDesc->taskItem.entry( pMsgItem->iEvent, pMsgItem->pMsg, pMsgItem->iMsgLen );
 		}
-		
+
+		pDesc->iTick = 0;
 		pDesc->status = TASK_STATUS_WAITING;
 		pDesc->iTick = 0;
 		
@@ -368,7 +388,10 @@ static void taskRuntimeDetect()
 	TaskDesc_T *pDesc = NULL;
 	INT32 idx = 0;
 	MessageItem_T *pItem = NULL;
-
+	INT8  szLogBuf[MAX_STR128 + 1] = {0};
+	INT32 iBufLen = 0;
+	time(&iCurTime);
+	
 	for (idx = 0; idx < MAX_TASK_NUM; idx ++)
 	{
 		pDesc = getTaskDesc(idx);
@@ -376,10 +399,36 @@ static void taskRuntimeDetect()
 		if ( pDesc == NULL || pDesc->taskItem.entry == NULL )
 			continue;
 
-		
+		if ( pDesc->status == TASK_STATUS_RUNNING  )
+		{
+			if ( iCurTime - pDesc->iTick > g_iEventTimeoutSec )
+			{
+				pItem = queueGet(&pDesc->task_queue, QUEUE_DEL_NO );
+				if ( pItem == NULL )
+					continue;
+				
+				sysLog_E("taskRuntimeDetect: task proc event[%d] to long[%d], program exit!!!", pItem->iEvent, iCurTime - pDesc->iTick );
+				sleep(2);
+				exit(1);
+			}
+		}
+
+
+		iBufLen = strlen(szLogBuf);
+		snprintf(szLogBuf + iBufLen, strlen(szLogBuf) - iBufLen, " %s-%d ", pDesc->taskItem.pNameStr, queueCnt(&pDesc->task_queue) );
+
 	}
+
+	if ( strlen(szLogBuf) > 0 )
+		sysLog_E("taskRuntimeDetect: taskQueue state:%s", szLogBuf );
 	
-	
+}
+
+static void almSingleHandle()
+{
+	alarm(1);
+	pthread_kill( g_timeoutId, SIGALRM );
+	return;
 }
 
 THREAD_ENTRY static void *TaskInfoDetector( void *arg )
@@ -389,25 +438,21 @@ THREAD_ENTRY static void *TaskInfoDetector( void *arg )
 	time_t iCurTime;
 	INT32 ret, sigNo = 0;
 
-	sigset_t *pSet = (sigset_t *) arg;
-	alarm(1);
+	sigset_t set = {0};
+	sigemptyset(&set);
+	sigaddset(&set, SIGALRM);
 	
 	for (;;)
 	{
-		ret = sigwait(pSet, &sigNo );
+		ret = sigwait(&set, &sigNo );
 		if ( ret != 0 )
 			sysLog_D("TaskTimeDetector: sigwait err, ret=%d", ret);
 
-		sysLog_D("TaskTimeDetector: handle %d succ.", sigNo);
+		sysLog_D("TaskTimeDetector: sigwait %d", sigNo);
+		taskRuntimeDetect();
 	}
 }
 
-static void almSingleHandle()
-{
-	alarm(1);
-	pthread_kill( g_timeoutId, SIGALRM );
-	return;
-}
 
 INT32 initTaskSingleManage()
 {
@@ -426,7 +471,7 @@ INT32 initTaskSingleManage()
 	alarm(1);
 	
 	pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
-	if ( pthread_create( &g_timeoutId, &attr, TaskInfoDetector, (void*)&set ) != 0 )
+	if ( pthread_create( &g_timeoutId, &attr, TaskInfoDetector, NULL ) != 0 )
 	{
 		sysLog_D("initTaskSingleManage pthead_create returns error" );
 		return RESULT_OPER_SYS_ERR;

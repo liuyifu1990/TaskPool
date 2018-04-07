@@ -2,6 +2,7 @@
 
 extern INT8 g_szCfgFilePath[MAX_FILE_PATH_LEN];
 
+#define TASK_TEST_EVENT 1003
 void testTask1( UINT32 event, INT8 *pMsg, INT32 iLen )
 {
 	TID_T SelfTID = {0};
@@ -9,27 +10,25 @@ void testTask1( UINT32 event, INT8 *pMsg, INT32 iLen )
 	
 	getSelfTid(&SelfTID);
 	CurSender(&SenderTID);	
-		
+	TID_T rec = {0};
+	
 	switch(event)
 	{
 		case INIT_TASK_EVENT:
 		{
-			sysLog_D("testTask1: %d recv INIT_TASK_EVENT, pMsg=%s, msgLen=%d, sender=%d", SelfTID.iTno, pMsg, iLen, SenderTID.iTno );
-
-			TID_T rec = {0};
 			INT32 ret = 0;
 
-			if (SelfTID.iTno == 1)
-			{
-				rec.iTno = 2;
-			}
-			else
-			{
-				rec.iTno = 1;
-			}
-			
-			usleep(1000*10);
-			ret = ASend(INIT_TASK_EVENT, "testMsg", 7, &rec);
+			rec.iTno = 1;
+
+			ret = ASend(TASK_TEST_EVENT, "testMsg", 7, &rec);
+			break;
+		}
+		case TASK_TEST_EVENT:
+		{
+			rec.iTno = 1;
+			thread_sleep_ms(10);
+			sysLog_D("testTask1: %d recv TASK_TEST_EVENT, pMsg=%s, msgLen=%d, sender=%d", SelfTID.iTno, pMsg, iLen, SenderTID.iTno );
+			ASend(TASK_TEST_EVENT, "testMsg", 7, &rec);
 			break;
 		}
 		case QUIT_TASK_EVENT:
@@ -50,6 +49,8 @@ void testTask1( UINT32 event, INT8 *pMsg, INT32 iLen )
 TaskItem_T TaskItems[MAX_TASK_NUM] = {
 		{1, "testTask1", testTask1, 1024, 10},
 		{2, "testTask2", testTask1, 1024, 10},
+		//{3, "testTask3", testTask1, 1024, 10},
+		//{4, "testTask4", testTask1, 1024, 10},
 };
 
 
