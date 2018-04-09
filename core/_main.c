@@ -77,6 +77,7 @@ int main()
 	InitCfgPath();
 	logInit();
 	logRegister("syslog.log", 3, LOG_TAG_APP00);
+	timerInit(500);
 
 	if ( initTaskSingleManage() != RESULT_OK )
 	{

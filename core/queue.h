@@ -1,6 +1,5 @@
 #ifndef _QUEUE_H_
 #define _QUEUE_H_
-#include "core.h"
 
 #pragma pack(1)
 
