@@ -1,5 +1,6 @@
 #include "all.h"
 
+extern TaskDesc_T g_taskManager[MAX_TASK_NUM];
 extern void getSelfTid(TID_T *pTID);
 
 typedef struct
@@ -28,17 +29,52 @@ typedef struct
 
 static TimerManager_T gTimerManager;
 
+static void timerSend1sEvent2Tasks()
+{
+	INT32 idx = 0;
+	TaskDesc_T *pDesc = NULL;
+	TID_T recvTid = {0};
+	
+	for (idx = 0; idx < MAX_TASK_NUM; idx ++ )
+	{
+		pDesc = &g_taskManager[idx];
+
+		if ( pDesc->taskItem.entry == NULL )
+		{
+			continue;
+		}
+		else
+		{
+			recvTid.iTno = pDesc->taskItem.iTno;
+			ASend(TIMER_1s_EVENT, NULL, 0, &recvTid);
+		}
+	}
+}
+
 THREAD_ENTRY static void *TimerThread( void *arg )
 {
 	INT32 idx = 0;
 	TimerItem_T *pItem = NULL;
 	struct timeval tv;
-	UINT64 cur100ms = 0;
+	static UINT64 cur100ms = 0;
 	TID_T revTid = {0};
+
+	static UINT64 cur50ms = 0;
 	
 	while(1)
 	{
-		thread_sleep_ms(20);
+		thread_sleep_ms(50);
+		cur50ms ++;
+
+		if ( cur50ms == 20 )
+		{
+			timerSend1sEvent2Tasks();
+			cur50ms = 0;
+		}
+		
+		gettimeofday(&tv,NULL);
+		cur100ms = tv.tv_sec*10 + tv.tv_usec/100000;
+		//sysLog_D("%ld-%ld-%ld", tv.tv_sec, tv.tv_usec, cur100ms);
 		
 		pthread_mutex_lock(&gTimerManager.mutex );
 		for (idx = 0; idx < gTimerManager.iArrCnt; idx ++)
@@ -46,9 +82,6 @@ THREAD_ENTRY static void *TimerThread( void *arg )
 			pItem = &gTimerManager.pTimerItemArr[idx];
 			if ( pItem->usedFlag == FALSE )
 				continue;
-
-			gettimeofday(&tv,NULL);
-			cur100ms = tv.tv_sec*10 + tv.tv_usec/10;
 			
 			if ( pItem->isLpTimer == TRUE )
 			{
@@ -61,8 +94,9 @@ THREAD_ENTRY static void *TimerThread( void *arg )
 			}
 			else
 			{
-				if ( cur100ms - pItem->iSetTick >= pItem->iTimer100ms )
+				if ( (UINT32)(cur100ms - pItem->iSetTick) >= pItem->iTimer100ms )
 				{
+					//sysLog_D("cur100ms=%ld, iSetTick=%ld, iTimer100ms=%ld", cur100ms, pItem->iSetTick, pItem->iTimer100ms);
 					pItem->iSetTick = cur100ms;
 					revTid.iTno = pItem->iTaskId;
 					ASend(pItem->iCbkEvt, pItem->pCbkData, pItem->iCbkLen, &revTid);
@@ -116,6 +150,8 @@ static INT32 findFreeTimerPos()
 INT32 timerInit(INT32 iMaxTimerCnt)
 {
 	pthread_t   tid;
+	pthread_attr_t attr = {0};
+	
 	if ( iMaxTimerCnt > 2000 || iMaxTimerCnt < 20 )
 	{
 		return RESULT_PARA_ERR;
@@ -132,10 +168,12 @@ INT32 timerInit(INT32 iMaxTimerCnt)
 	gTimerManager.iEmptyIdx = 0;
 
 	pthread_mutex_init( &gTimerManager.mutex, NULL );
+	pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
 
-	if ( pthread_create(&tid, NULL, TimerThread, NULL) == 0 )
+	if ( pthread_create(&tid, &attr, TimerThread, NULL) == 0 )
 	{
 		sysLog_E("timerInit succ, cnt[%d]...", iMaxTimerCnt );
+		pthread_attr_destroy(&attr);
 		return RESULT_OK;
 	}
 
@@ -194,7 +232,7 @@ INT32 timerSet( INT32 iCnt100ms, UINT16 event, void *pCbkData, INT32 len, INT8 t
 	pItem->iTimer100ms = iCnt100ms;
 	pItem->usedFlag = TRUE;
 	pItem->iTaskId = tid.iTno;
-	pItem->iSetTick = tv.tv_sec*10 + tv.tv_usec/10;
+	pItem->iSetTick = tv.tv_sec*10 + tv.tv_usec/100000;
 	
 	pthread_mutex_unlock(&gTimerManager.mutex );
 	

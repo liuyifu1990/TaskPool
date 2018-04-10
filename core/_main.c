@@ -20,15 +20,20 @@ void testTask1( UINT32 event, INT8 *pMsg, INT32 iLen )
 
 			rec.iTno = 1;
 
-			ret = ASend(TASK_TEST_EVENT, "testMsg", 7, &rec);
+			//ret = ASend(TASK_TEST_EVENT, "testMsg", 7, &rec);
+			ret = setLpTimer(50, TASK_TEST_EVENT, NULL, 0 );
 			break;
 		}
 		case TASK_TEST_EVENT:
 		{
-			rec.iTno = 1;
-			thread_sleep_ms(10);
-			sysLog_D("testTask1: %d recv TASK_TEST_EVENT, pMsg=%s, msgLen=%d, sender=%d", SelfTID.iTno, pMsg, iLen, SenderTID.iTno );
-			ASend(TASK_TEST_EVENT, "testMsg", 7, &rec);
+			INT32 ret = 0;
+			
+			sysLog_D("testTask1: recv TASK_TEST_EVENT event");
+			break;
+		}
+		case TIMER_1s_EVENT:
+		{
+			//sysLog_D("testTask1: recv timer 1s event");
 			break;
 		}
 		case QUIT_TASK_EVENT:

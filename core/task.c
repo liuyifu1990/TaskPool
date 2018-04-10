@@ -1,6 +1,6 @@
 #include "all.h"
 
-static TaskDesc_T g_taskManager[MAX_TASK_NUM];
+TaskDesc_T g_taskManager[MAX_TASK_NUM];
 static INT32 g_iTaskNum = 0;
 INT32  g_iTaskQueSize = 1000;
 INT32  g_CurNodeNo;
@@ -326,7 +326,7 @@ INT32 ASend(UINT32 iEvent, INT8 *pMsg, INT32 iLen, TID_T *pReceiver)
 	TaskDesc_T *pDesc = NULL;
 	INT32 ret = 0;
 	
-	if ( iEvent < 0 || pMsg == NULL || iLen <= 0 || pReceiver == NULL )
+	if ( iEvent < 0 || pReceiver == NULL )
 	{
 		return RESULT_PARA_ERR;
 	}
@@ -338,13 +338,16 @@ INT32 ASend(UINT32 iEvent, INT8 *pMsg, INT32 iLen, TID_T *pReceiver)
 	}
 	memset( pMsgItem, 0x0, sizeof(MessageItem_T) );
 
-	pMsgItem->pMsg = malloc(iLen);
-	if ( pMsgItem->pMsg == NULL )
+	if (iLen > 0)
 	{
-		free(pMsgItem);
-		return RESULT_ALLOC_ERR;
+		pMsgItem->pMsg = malloc(iLen);
+		if ( pMsgItem->pMsg == NULL )
+		{
+			free(pMsgItem);
+			return RESULT_ALLOC_ERR;
+		}
+		memcpy(pMsgItem->pMsg, pMsg, iLen );
 	}
-	memcpy(pMsgItem->pMsg, pMsg, iLen );
 	
 	pMsgItem->iEvent = iEvent;
 	pMsgItem->iMsgLen = iLen;
@@ -448,7 +451,7 @@ THREAD_ENTRY static void *TaskInfoDetector( void *arg )
 		if ( ret != 0 )
 			sysLog_D("TaskTimeDetector: sigwait err, ret=%d", ret);
 
-		sysLog_D("TaskTimeDetector: sigwait %d", sigNo);
+		//sysLog_D("TaskTimeDetector: sigwait %d", sigNo);
 		taskRuntimeDetect();
 	}
 }
@@ -481,7 +484,7 @@ INT32 initTaskSingleManage()
 		sysLog_D("initTaskSingleManage create suc, pthreadId=%d", g_timeoutId );
 	}
 	
-
+	pthread_attr_destroy(&attr);
 	return RESULT_OK;
 
 }

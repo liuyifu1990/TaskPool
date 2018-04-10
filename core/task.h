@@ -9,6 +9,7 @@
 #define INIT_TASK_EVENT   1000
 #define QUIT_TASK_EVENT   1001
 
+#define TIMER_1s_EVENT    9999
 
 typedef struct
 {
