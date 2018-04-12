@@ -32,6 +32,7 @@ typedef short int               INT16;
 typedef unsigned short int      UINT16;
 typedef void*               	HANDLE;
 typedef pthread_mutex_t MUTEX;
+typedef int						TIMERID; 			
 
 #define BOOL int
 

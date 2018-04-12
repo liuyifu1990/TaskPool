@@ -1,6 +1,6 @@
 .PHONY: Clean
-SRC = _main.c queue.c utils.c log.c timer.c task.c
-OBJS = _main.o queue.o utils.o log.o timer.o task.o
+SRC = _main.c queue.c utils.c log.c timer.c task.c initTaskPool.c
+OBJS = _main.o queue.o utils.o log.o timer.o task.o initTaskPool.o
 CC = gcc
 taskPool: $(OBJS)
 	$(CC) -o taskPool $(OBJS) -lpthread
@@ -17,7 +17,8 @@ timer.o: timer.c
 	$(CC) -c -g timer.c
 task.o: task.c
 	$(CC) -c -g task.c
-
+initTaskPool.o: initTaskPool.c
+	$(CC) -c -g initTaskPool.c
 
 	
 Clean:

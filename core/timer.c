@@ -184,7 +184,7 @@ INT32 timerInit(INT32 iMaxTimerCnt)
 
 INT32 timerSet( INT32 iCnt100ms, UINT16 event, void *pCbkData, INT32 len, INT8 type )
 {
-	INT32 iTimerId = 0;
+	TIMERID iTimerId = 0;
 	TimerItem_T *pItem = NULL;
 	TID_T tid = {0};
 	struct timeval tv;
@@ -239,17 +239,17 @@ INT32 timerSet( INT32 iCnt100ms, UINT16 event, void *pCbkData, INT32 len, INT8 t
 	return iTimerId;
 }
 
-INT32 setTimer( INT32 iCnt100ms, UINT16 event, void *pCbkData, INT32 len )
+TIMERID setTimer( INT32 iCnt100ms, UINT16 event, void *pCbkData, INT32 len )
 {
 	return timerSet( iCnt100ms, event, pCbkData, len, 1);
 }
 
-INT32 setLpTimer( INT32 iCnt100ms, UINT16 event, void *pCbkData, INT32 len )
+TIMERID setLpTimer( INT32 iCnt100ms, UINT16 event, void *pCbkData, INT32 len )
 {
 	return timerSet( iCnt100ms, event, pCbkData, len, 0);
 }
 
-void killTimer(INT32 iTimerId )
+void killTimer(TIMERID iTimerId )
 {
 	TimerItem_T *pItem = NULL;
 	
