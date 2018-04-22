@@ -33,11 +33,19 @@ static void timerSend1sEvent2Tasks()
 {
 	INT32 idx = 0;
 	TaskDesc_T *pDesc = NULL;
+	TaskDesc_T *pDescArr = NULL;
 	TID_T recvTid = {0};
+
+	pDescArr = getTaskDecArr();
+
+	if ( pDescArr == NULL )
+	{
+		return;
+	}
 	
 	for (idx = 0; idx < MAX_TASK_NUM; idx ++ )
 	{
-		pDesc = &g_taskManager[idx];
+		pDesc = pDescArr + idx;
 
 		if ( pDesc->taskItem.entry == NULL )
 		{

@@ -1,6 +1,6 @@
 #include "all.h"
 
-TaskDesc_T g_taskManager[MAX_TASK_NUM];
+static TaskDesc_T g_taskManager[MAX_TASK_NUM];
 static INT32 g_iTaskNum = 0;
 INT32  g_iTaskQueSize = 1000;
 INT32  g_CurNodeNo;
@@ -18,6 +18,12 @@ THREAD_ENTRY static void *TaskThread( void *arg );
 static TaskDesc_T*getTaskDesc(INT32 iTno);
 THREAD_ENTRY static void *TaskInfoDetector( void *arg );
 static void taskRuntimeDetect();
+
+TaskDesc_T * getTaskDecArr()
+{
+	return g_taskManager;
+}
+
 
 static void taskReadCoreCfg()
 {
@@ -55,7 +61,7 @@ INT32 taskInit(const TaskItem_T *szTaskItems)
 	{
 		pItem = &szTaskItems[idx];
 		
-		if (   pItem->iTno >= 0 
+		if (   pItem->iTno > 0 
 			&& pItem->entry != NULL 
 			&& pItem->iStacksize > 0 
 			&& pItem->iMaxtime > 0 

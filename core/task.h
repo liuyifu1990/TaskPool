@@ -25,7 +25,7 @@ typedef struct
 	TID_T Sender;
 }MessageItem_T;
 
-typedef void (*TASK_ENTRY_FUNC)(INT16 iEvent, INT8 *pMsg, INT32 iMsgLen);
+typedef void (*TASK_ENTRY_FUNC)(INT32 iEvent, INT8 *pMsg, INT32 iMsgLen);
 
 typedef struct
 {
@@ -53,4 +53,7 @@ INT32 ASend(UINT32    iEvent, INT8 *pMsg, INT32 iLen, TID_T *pReceiver);
 void  getSelfTid();
 INT16 CurEvent();
 void  CurSender(TID_T *pTID );
+TaskDesc_T *getTaskDecArr();
+
+
 #endif

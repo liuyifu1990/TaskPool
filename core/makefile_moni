@@ -1,0 +1,26 @@
+.PHONY: Clean
+SRC = main_moni.c queue.c utils.c log.c timer.c task.c initfunc.c ipces.c
+OBJS = main_moni.o queue.o utils.o log.o timer.o task.o initfunc.o ipces.o
+CC = gcc
+taskMoni: $(OBJS)
+	$(CC) -o taskMoni $(OBJS) -lpthread
+
+main_moni.o: main_moni.c
+	$(CC) -c -g main_moni.c
+queue.o: queue.c 
+	$(CC) -c -g  queue.c
+utils.o: utils.c
+	$(CC) -c -g  utils.c
+log.o: log.c
+	$(CC) -c -g log.c
+timer.o: timer.c
+	$(CC) -c -g timer.c
+task.o: task.c
+	$(CC) -c -g task.c
+initfunc.o: initfunc.c
+	$(CC) -c -g initfunc.c
+ipces.o: ipces.c
+	$(CC) -c -g ipces.c
+
+Clean:
+	rm -f *.o taskMoni

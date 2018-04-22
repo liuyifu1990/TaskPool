@@ -175,3 +175,14 @@ void getCurTimeStr(INT8 *szTime, INT32 len )
 	return;
 }
 
+void  getCurProcFullpath(INT8 *szPath, INT32 iPathLen)
+{
+	if ( szPath == NULL || iPathLen <= 0 )
+	{
+		return;
+	}
+
+	readlink("/proc/self/exe", szPath, iPathLen);
+}
+
+

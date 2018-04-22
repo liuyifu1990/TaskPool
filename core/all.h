@@ -11,12 +11,20 @@
 #include <fcntl.h>
 #include <time.h>
 #include <signal.h>
+#include <limits.h>
+#include <sys/shm.h>
+#include <sys/ipc.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/msg.h>
+
 
 #include "utils.h"
 #include "queue.h"
 #include "log.h"
 #include "timer.h"
 #include "task.h"
+#include "ipces.h"
 
 
 #pragma pack(1)

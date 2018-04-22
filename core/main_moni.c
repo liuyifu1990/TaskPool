@@ -1,10 +1,10 @@
 #include "all.h"
 
 extern INT8 g_szCfgFilePath[MAX_FILE_PATH_LEN];
-extern INT32 InitTaskPool(const TaskItem_T *szTaskItems);
+extern INT32 InitTaskMoni(const TaskItem_T *szTaskItems);
 
 #define TASK_TEST_EVENT 1003
-void testTask1( UINT32 event, INT8 *pMsg, INT32 iLen )
+void testMoni( UINT32 event, INT8 *pMsg, INT32 iLen )
 {
 	TID_T SelfTID = {0};
 	TID_T SenderTID = {0};
@@ -23,8 +23,7 @@ void testTask1( UINT32 event, INT8 *pMsg, INT32 iLen )
 
 			rec.iTno = 1;
 
-			//ret = ASend(TASK_TEST_EVENT, "testMsg", 7, &rec);
-			timerId = setLpTimer(50, TASK_TEST_EVENT, NULL, 0 );
+			timerId = setTimer(50, TASK_TEST_EVENT, NULL, 0 );
 			break;
 		}
 		case TASK_TEST_EVENT:
@@ -32,28 +31,29 @@ void testTask1( UINT32 event, INT8 *pMsg, INT32 iLen )
 			INT32 ret = 0;
 			icnt ++;
 			
-			sysLog_D("testTask1: recv TASK_TEST_EVENT event");
-
+			sysLog_D("testMoni: recv TASK_TEST_EVENT event");
+			timerId = setTimer(50, TASK_TEST_EVENT, NULL, 0 );
+			
 			if (icnt == 5)
 			{
-				sysLog_D("testTask1: kill timer id=%d", timerId);
+				sysLog_D("testMoni: kill timer id=%d", timerId);
 				killTimer(timerId);
 			}
 			break;
 		}
 		case TIMER_1s_EVENT:
 		{
-			//sysLog_D("testTask1: recv timer 1s event");
+			sysLog_D("testMoni: recv timer 1s event");
 			break;
 		}
 		case QUIT_TASK_EVENT:
 		{
-			sysLog_D("testTask1: recv QUIT_TASK_EVENT" );
+			sysLog_D("testMoni: recv QUIT_TASK_EVENT" );
 			break;
 		}
 		default:
 		{
-			sysLog_D("testTask1: recv known event-%d", event );
+			sysLog_D("testMoni: recv known event-%d", event );
 			break;
 		}
 	}
@@ -62,10 +62,7 @@ void testTask1( UINT32 event, INT8 *pMsg, INT32 iLen )
 }
 
 TaskItem_T TaskItems[MAX_TASK_NUM] = {
-		{1, "testTask1", testTask1, 1024, 10},
-		//{2, "testTask2", testTask1, 1024, 10},
-		//{3, "testTask3", testTask1, 1024, 10},
-		//{4, "testTask4", testTask1, 1024, 10},
+		{1, "testMoni", testMoni, 1024, 10},
 };
 
 
@@ -87,12 +84,12 @@ int main()
 	//子进程成为守护进程
 	setsid();
 	
-	if ( RESULT_OK != InitTaskPool(TaskItems) )
+	if ( RESULT_OK != InitTaskMoni(TaskItems) )
 	{
 		exit(1);
 	}
 
-	printf("%s\n", "taskPool init ok..." );
+	printf("%s\n", "taskMoni init ok..." );
 	
 	while( i==0 )
 	{
@@ -101,4 +98,5 @@ int main()
 		i --;
 	}
 }
+
 

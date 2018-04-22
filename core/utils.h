@@ -8,8 +8,8 @@
 
 #define TRUE  1
 #define FALSE 0
-#define CONF_FILE_PATH  "Config.ini"  
-
+#define CONF_FILE_PATH  	"Config.ini"  
+#define PROC_CFG_FILE_NAME  "Process.ini"
 #define THREAD_ENTRY
 #define MAX_TASK_NUM 	50
 
@@ -21,6 +21,12 @@
 #define MAX_STR512 		512
 #define MAX_STR1024 	1024
 #define MAX_STR2048 	2048
+
+#define MAX_FILE_PATH_LEN     1024
+#define MAX_FILE_NAME_LEN     256
+#define MAX_FILE_SUFFIX_LEN   32
+#define MAX_PROC_COUNT        10
+
 
 typedef int 		 			INT32;
 typedef unsigned int 			UINT32;
@@ -48,6 +54,7 @@ enum errorCode
 	RESULT_OPER_SYS_ERR     = 7,
 	RESULT_INNER_ASEND_ERR  = 8,
 	RESULT_TIMER_ERR		= 9,
+	RESULT_CFG_ITEM_ERR     = 10,
 };
 	
 
@@ -63,7 +70,7 @@ void  Trim(INT8 *s);
 void  TrimRight(INT8 *s);
 void  thread_sleep_ms(UINT32 iCnt_ms);
 void  thread_sleep_s(UINT32 iCnt_s);
-void   getCurTimeStr(INT8 *szTime, INT32 len );
-
+void  getCurTimeStr(INT8 *szTime, INT32 len );
+void  getCurProcFullpath(INT8 *szPath, INT32 iPathLen);
 
 #endif
